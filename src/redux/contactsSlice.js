@@ -1,28 +1,49 @@
 import { createSlice } from '@reduxjs/toolkit';
-
-export const CONTACTS = [
-  { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-  { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-  { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-  { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-];
+import { getContacts, deleteContact, addContact } from './operations';
 
 const initialState = {
-  contacts: CONTACTS,
+  contacts: [],
+  isLoading: false,
+  error: null,
 };
 
 const contactsSlice = createSlice({
   name: 'contacts',
   initialState,
-  reducers: {
-    addContact(state, { payload }) {
-      state.contacts = [...state.contacts, payload];
-    },
-    deleteContact(state, { payload }) {
-      state.contacts = state.contacts.filter(contact => contact.id !== payload);
-    },
-  },
+  extraReducers: builder =>
+    builder
+      // ----- getContacts -----
+      .addCase(getContacts.pending, pendingHandler)
+      .addCase(getContacts.fulfilled, (state, { payload }) => {
+        state.isLoading = false;
+        state.contacts = payload;
+      })
+      .addCase(getContacts.rejected, rejectHandler)
+      // ----- deleteContact -----
+      .addCase(deleteContact.pending, pendingHandler)
+      .addCase(deleteContact.fulfilled, (state, { payload }) => {
+        state.contacts = state.contacts.filter(
+          contact => contact.id !== payload.id
+        );
+        state.isLoading = false;
+      })
+      .addCase(deleteContact.rejected, rejectHandler)
+      // ----- addContact -----
+      .addCase(addContact.pending, pendingHandler)
+      .addCase(addContact.fulfilled, (state, { payload }) => {
+        state.contacts = [payload, ...state.contacts];
+        state.isLoading = false;
+      })
+      .addCase(addContact.rejected, rejectHandler),
 });
 
-export const { addContact, deleteContact } = contactsSlice.actions;
+function pendingHandler(state) {
+  state.isLoading = true;
+  state.error = null;
+}
+function rejectHandler(state, { payload }) {
+  state.isLoading = false;
+  state.error = payload;
+}
+
 export const contactsReducer = contactsSlice.reducer;
